@@ -32,4 +32,8 @@ export const getLabelColor = () => {
   return Math.abs(contrastWithBlack) > Math.abs(contrastWithWhite) 
     ? { r: 0, g: 0, b: 0 } 
     : { r: 1, g: 1, b: 1 };
-}
+};
+
+export const getVariableByName = (name: string, allVars: Variable[]) => {
+  return allVars.find(v => v.name === name);
+};

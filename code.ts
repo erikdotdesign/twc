@@ -1,6 +1,7 @@
 import Color from 'colorjs.io';
 import colors from './colors';
-import { capitalize, getLabelColor, hexToRgb } from './helpers';
+import gradients from './gradients';
+import { capitalize, getLabelColor, hexToRgb, getVariableByName } from './helpers';
 
 const main = async () => {
   await figma.loadFontAsync({ family: "Inter", style: "Bold" });
@@ -18,6 +19,7 @@ const main = async () => {
   const labelFontName = { family: "Inter", style: "Bold" };
   const labelColor = getLabelColor();
   const swatchLabelWidth = swatchSize * 2;
+  const variables: Variable[] = [];
 
   // Main container
   const container = figma.createFrame();
@@ -96,6 +98,7 @@ const main = async () => {
       const variableName = `tw-${color}/${step}`;
       const variable = figma.variables.createVariable(variableName, collection, "COLOR");
       variable.setValueForMode(collection.modes[0].modeId, rgb);
+      variables.push(variable);
 
       const rect = figma.createRectangle();
       rect.name = variableName;
@@ -110,6 +113,38 @@ const main = async () => {
 
     colorGroupRow.appendChild(swatchRow);
     container.appendChild(colorGroupRow);
+  }
+
+  const paintStyles = await figma.getLocalPaintStylesAsync();
+
+  paintStyles.forEach((paintStyle) => {
+    if (paintStyle.name.startsWith("tw-gradient")) {
+      paintStyle.remove();
+    }
+  });
+
+  for (const { name, from, to } of gradients) {
+    const fromVar = getVariableByName(from, variables);
+    const toVar = getVariableByName(to, variables);
+
+    if (!fromVar || !toVar) {
+      console.warn(`Skipping gradient "${name}" – missing variable`);
+      continue;
+    }
+
+    const fromRGB = fromVar.valuesByMode[Object.keys(fromVar.valuesByMode)[0]] as RGB;
+    const toRGB = toVar.valuesByMode[Object.keys(toVar.valuesByMode)[0]] as RGB;
+
+    const paintStyle = figma.createPaintStyle();
+    paintStyle.name = `tw-gradient/${name}`;
+    paintStyle.paints = [{
+      type: "GRADIENT_LINEAR",
+      gradientTransform: [[1, 0, 0], [0, 1, 0]],
+      gradientStops: [
+        { position: 0, color: fromRGB, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: fromVar.id } } },
+        { position: 1, color: toRGB, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: toVar.id } } },
+      ]
+    }];
   }
 
   figma.currentPage.selection = [container];
