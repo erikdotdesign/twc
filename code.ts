@@ -173,6 +173,13 @@ const main = async () => {
     container.appendChild(colorGroupRow);
   }
 
+  // Black & white
+  const blackVariable = figma.variables.createVariable("tw-black", collection, "COLOR");
+  blackVariable.setValueForMode(collection.modes[0].modeId, {r: 0, g: 0, b: 0});
+  const whiteVariable = figma.variables.createVariable("tw-white", collection, "COLOR");
+  whiteVariable.setValueForMode(collection.modes[0].modeId, {r: 1, g: 1, b: 1});
+
+  // Gradient styles
   await generateGradientStyles(gradients);
 
   figma.currentPage.selection = [container];
