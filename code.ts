@@ -1,7 +1,67 @@
 import Color from 'colorjs.io';
 import colors from './colors';
-import gradients from './gradients';
-import { capitalize, getLabelColor, hexToRgb, getVariableByName } from './helpers';
+import gradients, { Gradient } from './gradients';
+import { 
+  capitalize, 
+  getLabelColor, 
+  hexToRgb, 
+  camelCaseToSentenceLower, 
+  getVariableByName, 
+  flattenGradientMap, 
+  directionToTransform 
+} from './helpers';
+
+const generateGradientStyles = async (gradientsMap: Record<string, Gradient[]>) => {
+  const allVariables = await figma.variables.getLocalVariablesAsync();
+  const paintStyles = await figma.getLocalPaintStylesAsync();
+
+  // Clean old styles
+  paintStyles.forEach(style => {
+    if (style.name.startsWith("tw-gradient/")) style.remove();
+  });
+
+  const flattenedGradients = flattenGradientMap(gradientsMap);
+
+  for (const { category, gradient } of flattenedGradients) {
+    const { name, colors, direction } = gradient;
+    const gradientTransform = directionToTransform[direction] ?? directionToTransform["to-r"];
+
+    const gradientStops = [];
+    const colorCount = colors.length;
+
+    for (let i = 0; i < colorCount; i++) {
+      const stopName = colors[i];
+      const variable = getVariableByName(stopName, allVariables);
+
+      if (!variable) {
+        console.warn(`Skipping "${name}" – missing variable: ${stopName}`);
+        continue;
+      }
+
+      const rgb = variable.valuesByMode[Object.keys(variable.valuesByMode)[0]] as RGB;
+      const position = i / (colorCount - 1);
+
+      gradientStops.push({
+        position,
+        color: rgb,
+        boundVariables: {
+          color: { type: "VARIABLE_ALIAS", id: variable.id }
+        }
+      });
+    }
+
+    // Skip incomplete gradients
+    if (gradientStops.length < 2) continue;
+
+    const style = figma.createPaintStyle();
+    style.name = `tw-gradient/${camelCaseToSentenceLower(category)}/${name}`;
+    style.paints = [{
+      type: "GRADIENT_LINEAR",
+      gradientTransform,
+      gradientStops
+    }];
+  }
+};
 
 const main = async () => {
   await figma.loadFontAsync({ family: "Inter", style: "Bold" });
@@ -19,7 +79,6 @@ const main = async () => {
   const labelFontName = { family: "Inter", style: "Bold" };
   const labelColor = getLabelColor();
   const swatchLabelWidth = swatchSize * 2;
-  const variables: Variable[] = [];
 
   // Main container
   const container = figma.createFrame();
@@ -98,7 +157,6 @@ const main = async () => {
       const variableName = `tw-${color}/${step}`;
       const variable = figma.variables.createVariable(variableName, collection, "COLOR");
       variable.setValueForMode(collection.modes[0].modeId, rgb);
-      variables.push(variable);
 
       const rect = figma.createRectangle();
       rect.name = variableName;
@@ -115,40 +173,10 @@ const main = async () => {
     container.appendChild(colorGroupRow);
   }
 
-  const paintStyles = await figma.getLocalPaintStylesAsync();
-
-  paintStyles.forEach((paintStyle) => {
-    if (paintStyle.name.startsWith("tw-gradient")) {
-      paintStyle.remove();
-    }
-  });
-
-  for (const { name, from, to } of gradients) {
-    const fromVar = getVariableByName(from, variables);
-    const toVar = getVariableByName(to, variables);
-
-    if (!fromVar || !toVar) {
-      console.warn(`Skipping gradient "${name}" – missing variable`);
-      continue;
-    }
-
-    const fromRGB = fromVar.valuesByMode[Object.keys(fromVar.valuesByMode)[0]] as RGB;
-    const toRGB = toVar.valuesByMode[Object.keys(toVar.valuesByMode)[0]] as RGB;
-
-    const paintStyle = figma.createPaintStyle();
-    paintStyle.name = `tw-gradient/${name}`;
-    paintStyle.paints = [{
-      type: "GRADIENT_LINEAR",
-      gradientTransform: [[1, 0, 0], [0, 1, 0]],
-      gradientStops: [
-        { position: 0, color: fromRGB, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: fromVar.id } } },
-        { position: 1, color: toRGB, boundVariables: { color: { type: 'VARIABLE_ALIAS', id: toVar.id } } },
-      ]
-    }];
-  }
+  await generateGradientStyles(gradients);
 
   figma.currentPage.selection = [container];
-  figma.closePlugin("✅ twc variables added.");
+  figma.closePlugin("✅ twc variables and gradients added.");
 };
 
 main();

@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "module": "nodenext",
-    "target": "es2017",
-    "lib": ["ES2017"],
+    "target": "esnext",
+    "lib": ["ESNext"],
     "strict": true,
     "moduleResolution": "nodenext",
     "typeRoots": [

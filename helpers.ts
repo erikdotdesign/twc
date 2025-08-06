@@ -1,4 +1,5 @@
 import Color from 'colorjs.io';
+import { Gradient } from './gradients';
 
 export const hexToRgb = (hex: string): RGB => {
   const bigint = parseInt(hex.slice(1), 16);
@@ -36,4 +37,27 @@ export const getLabelColor = () => {
 
 export const getVariableByName = (name: string, allVars: Variable[]) => {
   return allVars.find(v => v.name === name);
+};
+
+export const directionToTransform: Record<string, [[number, number, number], [number, number, number]]> = {
+  "to-r": [[1, 0, 0], [0, 1, 0]],
+  "to-l": [[-1, 0, 1], [0, 1, 0]],
+  "to-t": [[1, 0, 0], [0, -1, 1]],
+  "to-b": [[1, 0, 0], [0, 1, 0]],
+  "to-tr": [[0.707, 0.707, 0], [-0.707, 0.707, 1]],
+  "to-tl": [[-0.707, 0.707, 1], [-0.707, -0.707, 1]],
+  "to-br": [[0.707, 0.707, 0], [0.707, -0.707, 0]],
+  "to-bl": [[-0.707, 0.707, 1], [0.707, 0.707, 0]],
+};
+
+export const flattenGradientMap = (gradientMap: Record<string, Gradient[]>): { category: string, gradient: Gradient }[] => {
+  return Object.entries(gradientMap).flatMap(([category, gradients]) =>
+    gradients.map(gradient => ({ category, gradient }))
+  );
+};
+
+export const camelCaseToSentenceLower = (str: string): string => {
+  return str
+    .replace(/([A-Z])/g, ' $1')
+    .toLowerCase();
 };
