@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint --ext .ts,.tsx --ignore-pattern node_modules .",
     "lint:fix": "eslint --ext .ts,.tsx --ignore-pattern node_modules --fix .",
-    "build": "node build.js",
+    "build": "esbuild code.ts --bundle --outfile=dist/code.js --format=iife --platform=browser --target=es2017 --loader:.mjs=js",
     "watch": "esbuild code.ts --bundle --outfile=dist/code.js --format=iife --platform=browser --target=es2017 --watch"
   },
   "author": "",

@@ -27,8 +27,8 @@ const main = async () => {
   container.counterAxisSizingMode = "AUTO";
   container.primaryAxisSizingMode = "AUTO";
   container.itemSpacing = swatchSpacing;
-  container.x = figma.viewport.bounds.x;
-  container.y = figma.viewport.bounds.y;
+  container.x = figma.viewport.center.x - 1112 / 2;
+  container.y = figma.viewport.center.y - 2008 / 2;
   figma.currentPage.appendChild(container);
 
   // Top step labels row
@@ -112,7 +112,7 @@ const main = async () => {
     container.appendChild(colorGroupRow);
   }
 
-  // figma.viewport.scrollAndZoomIntoView([container]);
+  figma.currentPage.selection = [container];
   figma.closePlugin("✅ twc variables added.");
 };
 
