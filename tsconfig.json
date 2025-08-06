@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "target": "es2017",
+    "lib": ["ES2017"],
+    "strict": true,
+    "moduleResolution": "nodenext",
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@figma"
+    ]
+  }
+}
